@@ -18,6 +18,8 @@ public class CharacterControllerV03 : MonoBehaviour {
 	{
 		public float Erdanziehung = 1.5f;
 		public float Fluganziehung = 0.2f;
+
+
 	}
 
 	[System.Serializable]
@@ -37,22 +39,22 @@ public class CharacterControllerV03 : MonoBehaviour {
 	Quaternion targetRotation;
 	Rigidbody Charakter;
 	public bool FlugModus;
-	bool sprungtasteDown = false;
+    bool sprungtasteDown = false;
+    bool springen = false;
 
-	float LaufenInput, DrehenInput, SpringenInput, FliegenInput;
 
-	public Quaternion TargetRotation
+
+    float LaufenInput, DrehenInput, SpringenInput;
+
+	/*public Quaternion TargetRotation
 	{
 		get 
 		{
 			return targetRotation; 
 		}
-	}
+	}*/
 
-	bool Grounded()
-	{
-		return Physics.Raycast (transform.position, Vector3.down, bewegungseinstellungen.AbstzuBoden, bewegungseinstellungen.Boden);
-	}
+	
 
 
 	void Start () 
@@ -60,7 +62,7 @@ public class CharacterControllerV03 : MonoBehaviour {
 		targetRotation = transform.rotation;
 		Charakter = GetComponent<Rigidbody>();
 
-		LaufenInput = DrehenInput = SpringenInput = FliegenInput = 0;
+		LaufenInput = DrehenInput = SpringenInput = 0;
 
 		FlugModus = false;
 	}
@@ -76,7 +78,12 @@ public class CharacterControllerV03 : MonoBehaviour {
 		}
 	}
 
-	void GetInputFlug ()
+    bool Grounded()
+    {
+        return Physics.Raycast(transform.position, Vector3.down, bewegungseinstellungen.AbstzuBoden, bewegungseinstellungen.Boden);
+    }
+
+    void GetInputFlug ()
 	{
 		if (FlugModus)
 		{
@@ -91,15 +98,18 @@ public class CharacterControllerV03 : MonoBehaviour {
 		GetInput ();
 		Drehen ();
 		GetInputFlug ();
-		sprungtasteDown = (SpringenInput > 0);
+        
+		
 	}
 
 	void FixedUpdate ()
 	{
 		Rennen ();
-		Charakter.velocity = transform.TransformDirection (Geschwindigkeit);
+        Charakter.velocity = transform.TransformDirection (Geschwindigkeit);  
 		NeuesSpringen ();
-	}
+        sprungtasteDown = (SpringenInput > 0);
+
+    }
 
 	void Rennen ()
 	{
@@ -121,48 +131,56 @@ public class CharacterControllerV03 : MonoBehaviour {
 
 
 		void NeuesSpringen()
-	{
-		//Flugmodus = Fluganziehung aktiv , Erdanziehung inaktiv, nur linkrechtssteuerung und sprungtaste aktiv
-		if (FlugModus) 
-		{
-			Geschwindigkeit.y -= physikeinstellungen.Fluganziehung;
-		}
-		//wenn nichtGrounded und sprungtaste und nichtFlugmodus
-		// dann Flugmodus an
-		if (!Grounded() && SpringenInput > 0 && !FlugModus && !sprungtasteDown) 
-		{
-			FlugModus = true;
-		}
+	{        
 
-		// wenn Grounded und sprungtaste 
-		//dann   Geschwindigkeit.y = bewegungseinstellungen.Springgeschwindikeit;
-		if (SpringenInput > 0 && Grounded ()) 
-		{
-			Geschwindigkeit.y = bewegungseinstellungen.Springgeschwindikeit;
-		} 
-	
-		//Wenn Grounded und SringenNein && FlugmodusJA
-		//dann FlugmodusNein
-		if (Grounded() && SpringenInput == 0 && FlugModus && !sprungtasteDown) 
-		{
-			FlugModus = false;
-		}
+        if (Grounded())
+        {
+             if (SpringenInput > 0)
+            {
+                Geschwindigkeit.y = bewegungseinstellungen.Springgeschwindikeit;
+                springen = true;
+            }
 
-		//wenn nichtGounded und Sprungtaste und Flugmodus
-		//dann Flugmodus aus
-		if (!Grounded() && SpringenInput > 0 && FlugModus) 
-		{
-			FlugModus = false;
-		}
-		// in allen anderen fällen
-		//Erdanziehung aktiv
-		else
-		{
-			Geschwindigkeit.y -= physikeinstellungen.Erdanziehung;
-		}
+           
 
+            else if (SpringenInput == 0 && FlugModus)
+            {
+                Geschwindigkeit.y -= physikeinstellungen.Erdanziehung;
+                FlugModus = false;
+            }
 
-	}
+        }
 
-	
+        if (!Grounded())
+        {
+            if (springen)
+            {
+                Geschwindigkeit.y -= Time.deltaTime*100;
+            }
+
+            if (springen && Geschwindigkeit.y <= 0)
+            {
+                Geschwindigkeit.y = -physikeinstellungen.Erdanziehung;
+                springen = false;
+            }
+
+            if (SpringenInput > 0 && !FlugModus && !sprungtasteDown  )
+            {
+                Geschwindigkeit.y = -physikeinstellungen.Fluganziehung;
+                FlugModus = true;                                              
+            }
+            else if (SpringenInput > 0 && FlugModus && !sprungtasteDown )
+            {
+                Geschwindigkeit.y = -physikeinstellungen.Erdanziehung;
+                FlugModus = false;                
+            }
+
+            /*else
+            {
+                Geschwindigkeit.y -= physikeinstellungen.Erdanziehung;
+            }*/
+        }
+       
+        
+	}	
 }
